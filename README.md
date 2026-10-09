@@ -1,0 +1,93 @@
+# TripMate AI
+
+TripMate is a travel-planning demo built with FastAPI, LangGraph, Groq, and MCP. A supervisor selects specialist agents for flights, hotels, weather, budgets, and itineraries. The workflow pauses so a person can review a draft before the final response is generated.
+
+## Features
+
+- Supervisor routing and a travel-focused input guardrail
+- MCP integrations for Tavily search, AviationStack, and OpenWeather
+- PostgreSQL-backed LangGraph checkpoints for resumable plans
+- Human review and revision of draft itineraries
+- Browser interface with PDF export
+
+## Requirements
+
+- Python 3.11 or newer
+- PostgreSQL database with a database/user available to the application
+- API keys for Groq and the MCP services you plan to use
+- `uv` / `uvx` for the AviationStack MCP adapter
+
+## Local setup
+
+1. Clone the repository and enter its directory.
+2. Create and activate a virtual environment:
+
+   ```powershell
+   python -m venv .venv
+   .venv\Scripts\Activate.ps1
+   ```
+
+3. Install the Python dependencies and `uv`:
+
+   ```powershell
+   python -m pip install -r requirements.txt uv
+   ```
+
+4. Copy `.env.example` to `.env`, then set the keys and PostgreSQL connection string. Never commit `.env` or real API keys.
+5. Start the web application:
+
+   ```powershell
+   uvicorn app:app --reload --host 127.0.0.1 --port 8000
+   ```
+
+6. Open <http://127.0.0.1:8000>.
+
+The PostgreSQL checkpoint tables are created by LangGraph when the backend starts. Live tools require their corresponding API keys; `GROQ_API_KEY` and `DATABASE_URL` are required for the application to start.
+
+## Configuration
+
+| Variable | Purpose | Required |
+| --- | --- | --- |
+| `GROQ_API_KEY` | Groq chat model access | Yes |
+| `DATABASE_URL` | PostgreSQL checkpoint storage | Yes |
+| `TAVILY_API_KEY` | Tavily search MCP | For live search |
+| `AVIATION_STACK_API_KEY` | AviationStack MCP | For flight data |
+| `OPENWEATHER_API_KEY` | Custom weather MCP server | For live weather |
+
+`AVIATIONSTACK_API_KEY` is also accepted as an alias for `AVIATION_STACK_API_KEY`. PostgreSQL connections are configured to require SSL by default unless `sslmode` is already included in `DATABASE_URL`.
+
+## API
+
+- `GET /health` reports application status.
+- `POST /api/travel` accepts `{"message": "Plan a week in Japan", "thread_id": null}` and returns a draft that may require review.
+- `POST /api/travel/approve` accepts `{"thread_id": "...", "approved": true, "feedback": ""}` to approve or request a revision.
+
+Requests are limited to 10,000 characters for a prompt and 5,000 characters for review feedback. The API returns generic server errors; consult application logs for diagnostic details.
+
+## Docker
+
+Build and run the image after configuring the required environment variables:
+
+```sh
+docker build -t tripmate-ai .
+docker run --rm -p 8000:8000 --env-file .env tripmate-ai
+```
+
+The container needs network access to PostgreSQL and the configured model and MCP services. Do not expose a publicly accessible instance without adding authentication, request throttling, and appropriate deployment controls; the demo API does not authenticate callers.
+
+## Security notes
+
+The input guardrail and model-generated travel advice are demonstrations, not security or travel-safety guarantees. Verify bookings, prices, visa rules, weather, and other time-sensitive details with authoritative sources. API keys belong in environment variables or a local `.env` file, never in source control.
+
+## Project layout
+
+- `app.py` — FastAPI endpoints and page setup
+- `backend.py` — LangGraph workflow, agents, and checkpointing
+- `mcp_client.py` — MCP connections and tool helpers
+- `custom_weather_mcp_server.py` — OpenWeather-backed MCP tools
+- `templates/` and `static/` — browser interface
+- `demo.excalidraw` — workflow diagram
+
+## License
+
+See [LICENSE](LICENSE).
