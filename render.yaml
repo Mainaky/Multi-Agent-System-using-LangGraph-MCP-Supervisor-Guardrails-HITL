@@ -11,3 +11,5 @@ services:
         value: 3.13.4
       - key: DEMO_MODE
         value: "true"
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false

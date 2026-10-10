@@ -68,7 +68,10 @@ async def home(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="index.html",
-        context={"demo_mode": DEMO_MODE},
+        context={
+            "demo_mode": DEMO_MODE,
+            "google_maps_api_key": os.getenv("GOOGLE_MAPS_API_KEY", "").strip(),
+        },
     )
 
 

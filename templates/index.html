@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/style.css">
 </head>
-<body data-demo-mode="{{ 'true' if demo_mode else 'false' }}">
+<body data-demo-mode="{{ 'true' if demo_mode else 'false' }}" data-google-maps-key="{{ google_maps_api_key }}">
   <div class="site-shell">
     <header class="topbar">
       <a class="brand" href="/" aria-label="TripMate home">
@@ -86,6 +86,53 @@
         </div>
       </section>
 
+      <section id="mapPlanner" class="map-planner-card" aria-labelledby="mapTitle" data-maps-enabled="{{ 'true' if google_maps_api_key else 'false' }}">
+        <div class="map-heading">
+          <div><span class="eyebrow"><span class="eyebrow-line"></span> YOUR ROUTE, ON THE MAP</span><h2 id="mapTitle">See how far your next stop really is.</h2><p>Choose a starting point and a destination to map the route, distance, and typical travel time.</p></div>
+          <span class="map-provider-pill"><span class="map-provider-dot"></span> Google Maps</span>
+        </div>
+        <div class="map-explorer">
+          <div class="map-controls">
+            <div class="place-field">
+              <label for="originAutocomplete">STARTING POINT</label>
+              <div id="originAutocomplete" class="autocomplete-slot"><span class="field-placeholder">Search for a city, address, or landmark</span></div>
+              <p id="originSelected" class="selected-place">Select a starting point</p>
+              <button id="useLocationBtn" class="location-button" type="button" disabled><span aria-hidden="true">◎</span> Use my current location</button>
+            </div>
+            <div class="route-connector" aria-hidden="true"><span></span></div>
+            <div class="place-field destination-field">
+              <label for="destinationAutocomplete">DESTINATION</label>
+              <div id="destinationAutocomplete" class="autocomplete-slot"><span class="field-placeholder">Where would you like to go?</span></div>
+              <p id="destinationSelected" class="selected-place">Select a destination</p>
+            </div>
+            <div class="travel-mode-row">
+              <label for="travelMode">TRAVEL MODE</label>
+              <select id="travelMode" aria-label="Choose travel mode">
+                <option value="DRIVING">🚗 Driving</option>
+                <option value="WALKING">🚶 Walking</option>
+                <option value="BICYCLING">🚲 Cycling</option>
+                <option value="TRANSIT">🚆 Transit</option>
+              </select>
+            </div>
+            <button id="routeBtn" class="route-button" type="button" disabled>Show my route <span aria-hidden="true">↗</span></button>
+            <p class="map-privacy-note">TripMate doesn’t save your location. Google Maps uses it to calculate your route.</p>
+          </div>
+          <div class="map-visual-column">
+            <div id="googleMap" class="google-map" aria-label="Interactive Google map showing your route">
+              <div id="mapState" class="map-state"><span class="map-state-icon">⌖</span><strong>Make this journey yours</strong><span>Choose two places to see your route appear here.</span></div>
+            </div>
+            <div id="routeSummary" class="route-summary hidden" aria-live="polite">
+              <div class="route-metric"><span class="metric-icon">↔</span><div><small>ROUTE DISTANCE</small><strong id="routeDistance">—</strong></div></div>
+              <div class="route-metric"><span class="metric-icon">◷</span><div><small>ESTIMATED TIME</small><strong id="routeDuration">—</strong></div></div>
+              <a id="openDirections" class="open-directions" href="#" target="_blank" rel="noopener noreferrer">Open turn-by-turn directions <span aria-hidden="true">↗</span></a>
+            </div>
+            <p class="map-attribution-note">Route distance and time are estimates from Google Maps and may change with traffic or conditions.</p>
+          </div>
+        </div>
+        <div id="mapSetupNotice" class="map-setup-notice hidden" role="status"></div>
+        <div id="mapError" class="map-error hidden" role="alert"></div>
+      </section>
+
       <section id="workflowSection" class="workflow-section hidden" aria-live="polite">
         <div class="workflow-header"><div><span class="eyebrow"><span class="eyebrow-line"></span> BEHIND THE PLAN</span><h2>Your travel team</h2></div><span id="guardrailBadge" class="guardrail-badge">Planning request</span></div>
         <p id="supervisorReasoning" class="supervisor-reasoning"></p>
@@ -112,5 +159,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.6/purify.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js" defer></script>
   <script src="/static/script.js" defer></script>
+  <script src="/static/map.js" defer></script>
 </body>
 </html>
