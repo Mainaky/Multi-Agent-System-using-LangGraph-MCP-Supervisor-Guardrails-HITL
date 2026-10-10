@@ -5,11 +5,13 @@ from functools import lru_cache
 
 import uvicorn
 from dotenv import load_dotenv
+from authlib.integrations.starlette_client import OAuth, OAuthError
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
+from starlette.middleware.sessions import SessionMiddleware
 
 BASE_DIR = Path(__file__).resolve().parent
 logger = logging.getLogger(__name__)
@@ -38,6 +40,44 @@ app = FastAPI(
     ),
     version="2.0.0",
 )
+
+SESSION_SECRET = os.getenv("SESSION_SECRET", "").strip()
+SESSION_SECRET_CONFIGURED = bool(SESSION_SECRET)
+if not SESSION_SECRET_CONFIGURED:
+    # Local development fallback only. Set a unique random value in production.
+    SESSION_SECRET = "local-only-change-me-before-deploying-tripmate"
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SESSION_SECRET,
+    same_site="lax",
+    https_only=os.getenv("SESSION_COOKIE_SECURE", "false").strip().lower()
+    in {"1", "true", "yes", "on"},
+)
+
+GOOGLE_OAUTH_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID", "").strip()
+GOOGLE_OAUTH_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET", "").strip()
+APP_BASE_URL = os.getenv("APP_BASE_URL", "http://127.0.0.1:8000").strip().rstrip("/")
+AUTH_CONFIGURED = bool(
+    GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET and SESSION_SECRET_CONFIGURED
+)
+oauth = OAuth()
+if GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET:
+    oauth.register(
+        name="google",
+        client_id=GOOGLE_OAUTH_CLIENT_ID,
+        client_secret=GOOGLE_OAUTH_CLIENT_SECRET,
+        server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+        client_kwargs={"scope": "openid email profile"},
+    )
+
+
+def page_context(request: Request) -> dict:
+    return {
+        "demo_mode": DEMO_MODE,
+        "google_maps_api_key": os.getenv("GOOGLE_MAPS_API_KEY", "").strip(),
+        "user": request.session.get("user"),
+        "auth_configured": AUTH_CONFIGURED,
+    }
 
 app.mount(
     "/static",
@@ -68,11 +108,58 @@ async def home(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="index.html",
-        context={
-            "demo_mode": DEMO_MODE,
-            "google_maps_api_key": os.getenv("GOOGLE_MAPS_API_KEY", "").strip(),
-        },
+        context=page_context(request),
     )
+
+
+@app.get("/signup", response_class=HTMLResponse)
+async def signup_page(request: Request):
+    context = page_context(request)
+    context["error"] = request.query_params.get("error", "")
+    context["app_base_url"] = APP_BASE_URL
+    return templates.TemplateResponse(
+        request=request,
+        name="signup.html",
+        context=context,
+    )
+
+
+@app.get("/auth/google")
+async def google_login(request: Request):
+    if not AUTH_CONFIGURED:
+        return RedirectResponse(url="/signup?error=not-configured", status_code=303)
+    redirect_uri = f"{APP_BASE_URL}/auth/google/callback"
+    return await oauth.google.authorize_redirect(request, redirect_uri)
+
+
+@app.get("/auth/google/callback", name="google_callback")
+async def google_callback(request: Request):
+    if not AUTH_CONFIGURED:
+        return RedirectResponse(url="/signup?error=not-configured", status_code=303)
+    try:
+        token = await oauth.google.authorize_access_token(request)
+        profile = token.get("userinfo") or {}
+        subject = profile.get("sub")
+        email = profile.get("email")
+        if not subject or not email or not profile.get("email_verified", False):
+            return RedirectResponse(url="/signup?error=unverified", status_code=303)
+        request.session.clear()
+        request.session["user"] = {
+            "sub": str(subject),
+            "email": str(email),
+            "name": str(profile.get("name") or email),
+            "picture": str(profile.get("picture") or ""),
+        }
+        return RedirectResponse(url="/", status_code=303)
+    except OAuthError:
+        logger.exception("Google OAuth callback failed")
+        return RedirectResponse(url="/signup?error=oauth", status_code=303)
+
+
+@app.post("/auth/logout")
+async def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse(url="/", status_code=303)
 
 
 @app.post("/api/travel")

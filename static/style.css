@@ -813,6 +813,41 @@ body {
   .system-map .itinerary-node { width: 132px; }
 }
 
+/* Account menu and Google sign-in */
+.account-chip { display: inline-flex; align-items: center; gap: 9px; color: #5f7064; font-size: .77rem; font-weight: 650; }
+.account-chip img { width: 29px; height: 29px; border: 1px solid #e1e9e1; border-radius: 50%; }
+.account-chip form { margin: 0; }
+.account-link { display: inline-flex; align-items: center; justify-content: center; padding: 9px 14px; border: 1px solid #dfe7df; border-radius: 9px; background: #fff; color: #315d49; font: 700 .75rem "DM Sans",sans-serif; text-decoration: none; cursor: pointer; }
+.account-link:hover { border-color: #a9c4ad; background: #f7faf6; }
+.auth-page { min-height: 100vh; background: radial-gradient(ellipse at 50% 0%, #e7f1e8 0, #f5f7f4 45%, #f5f7f4 100%); color: #172923; font-family: "DM Sans",sans-serif; }
+.auth-shell { width: min(100% - 32px, 500px); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: auto; padding: 38px 0; }
+.auth-brand { margin-bottom: 24px; }
+.auth-card { width: 100%; padding: 38px 42px 32px; border: 1px solid #e3eae3; border-radius: 20px; background: rgba(255,255,255,.96); box-shadow: 0 18px 56px rgba(31,58,42,.07); text-align: center; }
+.auth-icon { display: grid; width: 54px; height: 54px; place-items: center; margin: 0 auto 20px; border: 1px solid #e4eee3; border-radius: 17px; background: #f3f8f1; color: #347253; font-size: 1.4rem; }
+.auth-card .eyebrow { justify-content: center; }
+.auth-card h1 { margin: 12px 0 10px; color: #172923; font: 800 1.8rem/1.2 "Manrope",sans-serif; letter-spacing: -.055em; }
+.auth-intro { margin: 0 auto 24px; color: #77847b; font-size: .86rem; line-height: 1.65; }
+.google-login-button { position: relative; display: flex; width: 100%; min-height: 52px; align-items: center; justify-content: center; gap: 12px; border: 1px solid #d9e1da; border-radius: 10px; background: #fff; color: #33483a; font: 700 .9rem "DM Sans",sans-serif; text-decoration: none; box-shadow: 0 2px 5px rgba(30,55,39,.04); cursor: pointer; }
+.google-login-button:hover { border-color: #b7c7b9; background: #fbfcfa; box-shadow: 0 4px 14px rgba(30,55,39,.08); }
+.google-login-button svg { width: 19px; height: 19px; }
+.google-login-button.is-disabled { color: #839087; cursor: not-allowed; }
+.google-g { color: #4285f4; font-size: 1.25rem; font-weight: 800; }
+.auth-setup-hint { margin: 10px 0 0; color: #9a7950; font-size: .7rem; line-height: 1.5; }
+.auth-alert { margin: 0 0 17px; padding: 12px 14px; border: 1px solid #eadfc8; border-radius: 10px; background: #fffaf1; color: #765f3f; font-size: .75rem; line-height: 1.55; text-align: left; }
+.auth-divider { display: flex; align-items: center; gap: 12px; margin: 24px 0 13px; color: #a0aaa2; }
+.auth-divider span { height: 1px; flex: 1; background: #edf0ed; }
+.auth-divider small { font-size: .57rem; font-weight: 750; letter-spacing: .12em; }
+.auth-privacy { color: #89958d; font-size: .69rem; line-height: 1.6; }
+.auth-back-link { display: inline-block; margin-top: 24px; color: #3d7157; font-size: .76rem; font-weight: 700; text-decoration: none; }
+.auth-back-link:hover { text-decoration: underline; }
+.auth-footer { margin: 18px 0 0; color: #9aa69c; font-size: .7rem; }
+@media (max-width: 560px) {
+  .auth-card { padding: 30px 22px 26px; }
+  .auth-card h1 { font-size: 1.55rem; }
+  .account-chip > span { display: none; }
+  .account-link { padding: 8px 10px; }
+}
+
 /* Interactive Google Maps route explorer */
 .map-planner-card { margin: 0 0 20px; padding: 30px 34px 26px; border: 1px solid #e5eae5; border-radius: 18px; background: #fff; box-shadow: 0 12px 40px rgba(31,58,42,.035); }
 .map-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
@@ -964,7 +999,6 @@ body {
 .agent-chip { display: inline-flex; align-items: center; gap: 7px; padding: 9px 12px; border: 1px solid #dfe9df; border-radius: 10px; background: #f7faf6; color: #3f6548; font-size: .73rem; }
 .agent-chip::before { width: 6px; height: 6px; border-radius: 50%; background: #75a47e; content: ""; box-shadow: 0 0 0 3px #e8f2e7; }
 .workflow-section { position: relative; overflow: hidden; }
-.workflow-section::after { position: absolute; top: -75px; right: -55px; width: 190px; height: 190px; border: 1px solid #edf2ec; border-radius: 50%; box-shadow: 0 0 0 22px rgba(244,248,243,.55), 0 0 0 44px rgba(244,248,243,.35); content: ""; pointer-events: none; }
 @keyframes orbit-breathe { 0%,100% { opacity: .55; transform: scale(.98); } 50% { opacity: 1; transform: scale(1.04); } }
 
 @media (max-width: 580px) {

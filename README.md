@@ -62,6 +62,17 @@ The repository includes a `render.yaml` Blueprint for a free Python web service.
 
 Render's free web services sleep after 15 minutes without inbound traffic and typically take about one minute to start on the next request. Demo review state is held in process memory, so it is temporary and can disappear after a restart or sleep. This deployment is intended for showcasing, not production use.
 
+### Enable Google sign-in
+
+The app includes a Google OAuth sign-in/sign-up page at `/signup`. First-time Google sign-in creates a TripMate session; the app receives the user's verified name, email, and profile image, but does not store a durable account record or save itineraries to an account database.
+
+1. In Google Cloud Console, create an OAuth client of type **Web application** and configure the OAuth consent screen.
+2. Add `https://tripmate-ai-demo.onrender.com` as an authorized JavaScript origin and `https://tripmate-ai-demo.onrender.com/auth/google/callback` as an authorized redirect URI. For local development, use origin `http://127.0.0.1:8000` and redirect URI `http://127.0.0.1:8000/auth/google/callback`.
+3. In Render's service environment, set `APP_BASE_URL=https://tripmate-ai-demo.onrender.com`, `GOOGLE_OAUTH_CLIENT_ID`, and `GOOGLE_OAUTH_CLIENT_SECRET`. Render generates `SESSION_SECRET` from the Blueprint; if creating the service manually, set it to a unique random value and set `SESSION_COOKIE_SECURE=true`.
+4. Save the variables and redeploy. Never commit the OAuth client secret or paste it into chat.
+
+Google sign-in gives the browser a signed session cookie and does not save the Google access token. The planner endpoints remain publicly callable in this demo and login does not make the app a production account system. Add persistent account storage, per-user itinerary ownership, CSRF protection, and API authorization before using it for private user data.
+
 ## Configuration
 
 | Variable | Purpose | Required |
@@ -72,6 +83,11 @@ Render's free web services sleep after 15 minutes without inbound traffic and ty
 | `AVIATION_STACK_API_KEY` | AviationStack MCP | For flight data |
 | `OPENWEATHER_API_KEY` | Custom weather MCP server | For live weather |
 | `GOOGLE_MAPS_API_KEY` | Browser key for Maps JavaScript API, Places API (New), and Routes API | Optional; required for interactive map |
+| `GOOGLE_OAUTH_CLIENT_ID` | Google OAuth web client ID | Optional; required for Google sign-in |
+| `GOOGLE_OAUTH_CLIENT_SECRET` | Google OAuth web client secret | Optional; required for Google sign-in |
+| `SESSION_SECRET` | Random key used to sign the login session cookie | Required to enable Google sign-in |
+| `SESSION_COOKIE_SECURE` | Mark the session cookie HTTPS-only | Set `true` for deployed HTTPS |
+| `APP_BASE_URL` | Public origin used to construct the OAuth callback URI | Must exactly match the Google Console origin |
 
 For `GOOGLE_MAPS_API_KEY`, create a browser key in Google Cloud, enable Maps JavaScript API, Places API (New), and Routes API, and restrict the key by HTTP referrer to the deployed app (for example, `https://tripmate-ai-demo.onrender.com/*`) and to those APIs. Google Maps Platform requires an API key and billing setup; check current usage and pricing in Google Cloud before enabling it. The key is sent to the browser by design, so referrer and API restrictions are essential. The map reports the route distance and typical duration returned by Google for the selected travel mode; actual travel times can change with traffic and conditions.
 

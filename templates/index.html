@@ -20,6 +20,15 @@
       </a>
       <div class="topbar-right">
         <span class="topbar-caption">Your personal trip planner</span>
+        {% if user %}
+        <div class="account-chip">
+          {% if user.picture %}<img src="{{ user.picture }}" alt="" referrerpolicy="no-referrer">{% endif %}
+          <span>{{ user.name }}</span>
+          <form action="/auth/logout" method="post"><button type="submit" class="account-link">Sign out</button></form>
+        </div>
+        {% else %}
+        <a class="account-link account-signin" href="/signup">Sign in</a>
+        {% endif %}
         {% if demo_mode %}
         <span class="mode-pill demo-pill"><span class="mode-dot"></span> Interactive demo</span>
         {% else %}
