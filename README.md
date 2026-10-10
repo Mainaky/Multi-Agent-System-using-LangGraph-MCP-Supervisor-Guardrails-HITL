@@ -44,6 +44,17 @@ TripMate is a travel-planning demo built with FastAPI, LangGraph, Groq, and MCP.
 
 The PostgreSQL checkpoint tables are created by LangGraph when the backend starts. Live tools require their corresponding API keys; `GROQ_API_KEY` and `DATABASE_URL` are required for the application to start.
 
+## Run the interactive demo (no credentials required)
+
+The demo mode uses deterministic sample itineraries to show the full interface and human-review flow without calling an LLM, PostgreSQL, or external MCP services.
+
+1. Install the Python dependencies: `python -m pip install -r requirements.txt`.
+2. Copy `.env.demo.example` to `.env`.
+3. Start the server: `uvicorn app:app --reload --host 127.0.0.1 --port 8000`.
+4. Open <http://127.0.0.1:8000>, choose a sample prompt, generate a draft, and approve it or request a revision.
+
+The interface labels this mode as a demo and identifies the itinerary content as sample data. Set `DEMO_MODE=false` and configure the values in `.env.example` to use the live integrations.
+
 ## Configuration
 
 | Variable | Purpose | Required |
