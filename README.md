@@ -55,6 +55,12 @@ The demo mode uses deterministic sample itineraries to show the full interface a
 
 The interface labels this mode as a demo and identifies the itinerary content as sample data. Set `DEMO_MODE=false` and configure the values in `.env.example` to use the live integrations.
 
+## Deploy the public demo on Render
+
+The repository includes a `render.yaml` Blueprint for a free Python web service. It sets `DEMO_MODE=true`, uses `/health` for health checks, and does not require a database or API secrets. Connect this public GitHub repository to Render as a Blueprint and deploy the `tripmate-ai-demo` service. Render will assign the service a public `onrender.com` URL.
+
+Render's free web services sleep after 15 minutes without inbound traffic and typically take about one minute to start on the next request. Demo review state is held in process memory, so it is temporary and can disappear after a restart or sleep. This deployment is intended for showcasing, not production use.
+
 ## Configuration
 
 | Variable | Purpose | Required |
