@@ -1,23 +1,34 @@
 from pathlib import Path
 import logging
+import os
+from functools import lru_cache
 
 import uvicorn
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
-from backend import run_travel_agent, resume_travel_agent
-
-# This is kept from the original project to allow the existing synchronous
-# agent functions to call async MCP helpers inside FastAPI.
-import nest_asyncio
-
-nest_asyncio.apply()
-
 BASE_DIR = Path(__file__).resolve().parent
 logger = logging.getLogger(__name__)
+load_dotenv(BASE_DIR / ".env")
+DEMO_MODE = (
+    os.getenv("DEMO_MODE", "false").strip().lower()
+    in {"1", "true", "yes", "on"}
+)
+
+
+@lru_cache(maxsize=1)
+def _live_backend():
+    """Load the credential-backed graph only when live mode is used."""
+    import nest_asyncio
+
+    nest_asyncio.apply()
+    from backend import resume_travel_agent, run_travel_agent
+
+    return run_travel_agent, resume_travel_agent
 
 app = FastAPI(
     title="TripMate AI",
@@ -53,7 +64,7 @@ async def home(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="index.html",
-        context={},
+        context={"demo_mode": DEMO_MODE},
     )
 
 
@@ -70,6 +81,11 @@ async def travel_planner(request_data: TravelRequest):
                     "error": "Message cannot be empty.",
                 },
             )
+
+        if DEMO_MODE:
+            from demo_mode import run_travel_agent
+        else:
+            run_travel_agent, _ = _live_backend()
 
         result = run_travel_agent(
             user_input=user_message,
@@ -107,6 +123,11 @@ async def approve_travel_plan(request_data: ApprovalRequest):
                 },
             )
 
+        if DEMO_MODE:
+            from demo_mode import resume_travel_agent
+        else:
+            _, resume_travel_agent = _live_backend()
+
         result = resume_travel_agent(
             thread_id=request_data.thread_id,
             approved=request_data.approved,
@@ -137,6 +158,7 @@ async def health_check():
     return {
         "status": "ok",
         "message": "TripMate AI API is running",
+        "mode": "demo" if DEMO_MODE else "live",
         "features": [
             "supervisor_agent",
             "input_guardrail",
