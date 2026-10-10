@@ -60,13 +60,22 @@ function showWorkflow(data) {
   const reasoning = document.getElementById("supervisorReasoning");
   const chips = document.getElementById("agentChips");
   const guardrailBadge = document.getElementById("guardrailBadge");
+  const selectedAgents = new Set(data.selected_agents || []);
+  const systemMap = document.querySelector(".system-map");
 
   reasoning.textContent = data.supervisor_reasoning || "Supervisor routing completed.";
   chips.innerHTML = "";
+  if (systemMap) {
+    systemMap.classList.toggle("has-selection", selectedAgents.size > 0);
+    systemMap.querySelectorAll(".specialist-node[data-agent]").forEach((node) => {
+      node.classList.toggle("is-selected", selectedAgents.has(node.dataset.agent));
+    });
+  }
 
-  (data.selected_agents || []).forEach((agent) => {
+  [...selectedAgents].forEach((agent) => {
     const chip = document.createElement("span");
     chip.className = "agent-chip";
+    chip.dataset.agent = agent;
     chip.textContent = AGENT_LABELS[agent] || agent;
     chips.appendChild(chip);
   });

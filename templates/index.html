@@ -40,14 +40,26 @@
           </div>
         </div>
         <aside class="hero-card" aria-label="How TripMate works">
-          <div class="hero-card-top"><span class="mini-label">THE TRIPMATE APPROACH</span><span class="sparkle">✳</span></div>
-          <div class="hero-card-title">From first thought<br>to ready-to-go.</div>
-          <div class="journey-line">
-            <div class="journey-step"><span class="journey-icon">01</span><div><strong>Tell us what you imagine</strong><small>Destination, dates, budget — or just a feeling.</small></div></div>
-            <div class="journey-step"><span class="journey-icon">02</span><div><strong>Your travel team gets to work</strong><small>Flights, stays, weather, and the big picture.</small></div></div>
-            <div class="journey-step"><span class="journey-icon">03</span><div><strong>You make the final call</strong><small>Review, refine, and make it your own.</small></div></div>
+          <div class="hero-card-top"><span class="mini-label">A COORDINATED TRAVEL TEAM</span><span class="sparkle">✳</span></div>
+          <div class="hero-card-title">One request.<br><span class="diagram-accent">A whole team in motion.</span></div>
+          <div class="system-map" role="img" aria-label="A travel request is routed by the LangGraph supervisor to specialist agents, then presented for your approval">
+            <svg class="system-wires" viewBox="0 0 400 260" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M200 130 C145 105 125 69 91 53"/><path d="M200 130 C255 105 275 69 309 53"/>
+              <path d="M200 130 C145 155 125 191 91 207"/><path d="M200 130 C255 155 275 191 309 207"/>
+              <path d="M200 44 L200 112"/><path d="M200 148 L200 225"/>
+              <circle class="wire-pulse pulse-a" r="3"><animateMotion dur="3.5s" repeatCount="indefinite" path="M200 130 C145 105 125 69 91 53"/></circle>
+              <circle class="wire-pulse pulse-b" r="3"><animateMotion dur="4s" repeatCount="indefinite" path="M200 130 C255 155 275 191 309 207"/></circle>
+            </svg>
+            <div class="request-node"><span>✳</span><b>Your trip idea</b></div>
+            <div class="map-node specialist-node flight-node" data-agent="flight_agent"><span class="node-symbol">↗</span><span><b>Flights</b><small>Routes</small></span></div>
+            <div class="map-node specialist-node hotel-node" data-agent="hotel_agent"><span class="node-symbol">⌂</span><span><b>Stays</b><small>Comfort</small></span></div>
+            <div class="map-node specialist-node weather-node" data-agent="weather_agent"><span class="node-symbol">☼</span><span><b>Weather</b><small>Timing</small></span></div>
+            <div class="map-node specialist-node budget-node" data-agent="budget_agent"><span class="node-symbol">◎</span><span><b>Budget</b><small>Fit</small></span></div>
+            <div class="map-node specialist-node itinerary-node" data-agent="itinerary_agent"><span class="node-symbol">≋</span><span><b>Itinerary</b><small>Day by day</small></span></div>
+            <div class="supervisor-node"><span class="supervisor-orbit"></span><span class="supervisor-core">✳</span><b>Supervisor</b><small>LangGraph</small></div>
+            <div class="map-output"><span class="output-line"></span><span>Itinerary</span><i>→</i><span class="human-check">Your approval</span></div>
           </div>
-          <div class="hero-card-footer"><span class="pulse-dot"></span> Human approval built into every plan</div>
+          <div class="hero-card-footer"><span class="pulse-dot"></span> You stay in control at every step</div>
         </aside>
       </section>
 
@@ -77,7 +89,7 @@
       <section id="workflowSection" class="workflow-section hidden" aria-live="polite">
         <div class="workflow-header"><div><span class="eyebrow"><span class="eyebrow-line"></span> BEHIND THE PLAN</span><h2>Your travel team</h2></div><span id="guardrailBadge" class="guardrail-badge">Planning request</span></div>
         <p id="supervisorReasoning" class="supervisor-reasoning"></p>
-        <div id="agentChips" class="agent-chips"></div>
+        <div id="agentChips" class="agent-chips" aria-label="Agents selected for this request"></div>
       </section>
 
       <section id="resultSection" class="result-section hidden" aria-live="polite">
