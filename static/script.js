@@ -242,10 +242,8 @@ function copyResult() {
     });
 }
 
-function downloadPDF() {
-  const pdfContent = document.getElementById("pdfContent");
-
-  if (!latestAnswerMarkdown || !pdfContent) {
+async function downloadPDF() {
+  if (!latestAnswerMarkdown) {
     showError("No travel plan available to download.");
     return;
   }
@@ -255,41 +253,41 @@ function downloadPDF() {
   downloadBtn.textContent = "Preparing PDF...";
   downloadBtn.disabled = true;
 
-  const options = {
-    margin: 0.5,
-    filename: "ai-travel-plan.pdf",
-    image: {
-      type: "jpeg",
-      quality: 0.98
-    },
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff"
-    },
-    jsPDF: {
-      unit: "in",
-      format: "a4",
-      orientation: "portrait"
-    },
-    pagebreak: {
-      mode: ["avoid-all", "css", "legacy"]
-    }
-  };
+  downloadBtn.textContent = "Preparing PDF…";
+  downloadBtn.disabled = true;
 
-  html2pdf()
-    .set(options)
-    .from(pdfContent)
-    .save()
-    .then(() => {
-      downloadBtn.textContent = oldText;
-      downloadBtn.disabled = false;
-    })
-    .catch(() => {
-      downloadBtn.textContent = oldText;
-      downloadBtn.disabled = false;
-      showError("Could not download PDF.");
+  try {
+    const response = await fetch("/api/travel/pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: latestAnswerMarkdown })
     });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Could not generate the PDF.");
+    }
+
+    const pdf = await response.blob();
+    const signature = new TextDecoder().decode(await pdf.slice(0, 4).arrayBuffer());
+    if (signature !== "%PDF") {
+      throw new Error("The server returned an invalid PDF. Please try again.");
+    }
+
+    const url = URL.createObjectURL(pdf);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "tripmate-ai-travel-plan.pdf";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+  } catch (error) {
+    showError(error.message || "Could not download PDF.");
+  } finally {
+    downloadBtn.textContent = oldText;
+    downloadBtn.disabled = false;
+  }
 }
 
 document.addEventListener("keydown", function(event) {

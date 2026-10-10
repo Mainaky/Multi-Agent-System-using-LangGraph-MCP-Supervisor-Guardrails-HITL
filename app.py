@@ -6,7 +6,7 @@ from functools import lru_cache
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
@@ -57,6 +57,10 @@ class ApprovalRequest(BaseModel):
     thread_id: str = Field(min_length=1, max_length=128)
     approved: bool
     feedback: str = Field(default="", max_length=5_000)
+
+
+class PDFRequest(BaseModel):
+    content: str = Field(min_length=1, max_length=50_000)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -149,6 +153,31 @@ async def approve_travel_plan(request_data: ApprovalRequest):
             content={
                 "success": False,
                 "error": "The travel plan could not be resumed. Check the server logs for details.",
+            },
+        )
+
+
+@app.post("/api/travel/pdf")
+async def export_travel_plan(request_data: PDFRequest):
+    try:
+        from pdf_export import build_travel_pdf
+
+        pdf_content = build_travel_pdf(request_data.content)
+        return Response(
+            content=pdf_content,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": 'attachment; filename="tripmate-ai-travel-plan.pdf"',
+                "Cache-Control": "no-store",
+            },
+        )
+    except Exception:
+        logger.exception("Travel plan PDF export failed")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": "The PDF could not be generated. Please try again.",
             },
         )
 

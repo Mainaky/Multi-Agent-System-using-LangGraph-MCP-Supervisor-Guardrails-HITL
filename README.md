@@ -78,8 +78,9 @@ Render's free web services sleep after 15 minutes without inbound traffic and ty
 - `GET /health` reports application status.
 - `POST /api/travel` accepts `{"message": "Plan a week in Japan", "thread_id": null}` and returns a draft that may require review.
 - `POST /api/travel/approve` accepts `{"thread_id": "...", "approved": true, "feedback": ""}` to approve or request a revision.
+- `POST /api/travel/pdf` accepts `{"content": "## Your itinerary..."}` and returns a paginated, selectable-text PDF attachment.
 
-Requests are limited to 10,000 characters for a prompt and 5,000 characters for review feedback. The API returns generic server errors; consult application logs for diagnostic details.
+Requests are limited to 10,000 characters for a prompt, 5,000 characters for review feedback, and 50,000 characters for a PDF. The API returns generic server errors; consult application logs for diagnostic details.
 
 ## Docker
 
