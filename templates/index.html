@@ -133,8 +133,26 @@
             <div id="routeSummary" class="route-summary hidden" aria-live="polite">
               <div class="route-metric"><span class="metric-icon">↔</span><div><small>ROUTE DISTANCE</small><strong id="routeDistance">—</strong></div></div>
               <div class="route-metric"><span class="metric-icon">◷</span><div><small>ESTIMATED TIME</small><strong id="routeDuration">—</strong></div></div>
+              <div id="routeFareMetric" class="route-metric route-fare hidden"><span class="metric-icon">₹</span><div><small>TRANSIT FARE</small><strong id="routeFare">—</strong></div></div>
               <a id="openDirections" class="open-directions" href="#" target="_blank" rel="noopener noreferrer">Open turn-by-turn directions <span aria-hidden="true">↗</span></a>
             </div>
+            <section id="nearbyPanel" class="nearby-panel" aria-labelledby="nearbyTitle">
+              <div class="nearby-heading"><div><span class="eyebrow"><span class="eyebrow-line"></span> AROUND YOUR DESTINATION</span><h3 id="nearbyTitle">Stay close to the places that matter.</h3><p id="nearbyDescription">Choose a destination to discover nearby hotels, railway stations, and airports.</p></div>
+                <label class="nearby-radius">Search radius<select id="nearbyRadius" aria-label="Nearby search radius"><option value="1500">1.5 km</option><option value="5000" selected>5 km</option><option value="10000">10 km</option><option value="25000">25 km</option></select></label>
+              </div>
+              <div class="nearby-tabs" role="tablist" aria-label="Nearby places">
+                <button type="button" class="nearby-tab is-active" data-nearby-kind="hotels" role="tab" aria-selected="true">⌂ Hotels</button>
+                <button type="button" class="nearby-tab" data-nearby-kind="stations" role="tab" aria-selected="false">🚆 Railway stations</button>
+                <button type="button" class="nearby-tab" data-nearby-kind="airports" role="tab" aria-selected="false">✈ Airports</button>
+                <button id="nearbySearchButton" type="button" class="nearby-search-button" disabled>Find nearby places</button>
+              </div>
+              <div class="nearby-content">
+                <div id="nearbyEmpty" class="nearby-empty"><span aria-hidden="true">⌖</span><strong>Explore what’s nearby</strong><span>Pick a destination above, then search for hotels or transport links around it.</span></div>
+                <div id="nearbyLoading" class="nearby-loading hidden" role="status">Searching Google Maps around your destination…</div>
+                <div id="nearbyResults" class="nearby-results" aria-live="polite"></div>
+              </div>
+              <p class="nearby-disclosure">Google place data can include ratings and a broad price level or range. It is not a dated room quote. Room type, floor, cancellation rules, and booking prices must be confirmed with the property or booking provider. Transit fares appear only when Google has fare data for the whole route.</p>
+            </section>
             <p class="map-attribution-note">Route distance and time are estimates from Google Maps and may change with traffic or conditions.</p>
           </div>
         </div>

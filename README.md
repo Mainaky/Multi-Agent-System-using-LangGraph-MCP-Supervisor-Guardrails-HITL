@@ -9,7 +9,7 @@ TripMate is a travel-planning demo built with FastAPI, LangGraph, Groq, and MCP.
 - PostgreSQL-backed LangGraph checkpoints for resumable plans
 - Human review and revision of draft itineraries
 - Browser interface with PDF export
-- Google Maps place search, route visualization, and route distance / duration estimates
+- Google Maps place search, route visualization, nearby hotels / rail stations / airports, and route distance / duration estimates
 
 ## Requirements
 
@@ -58,7 +58,7 @@ The interface labels this mode as a demo and identifies the itinerary content as
 
 ## Deploy the public demo on Render
 
-The repository includes a `render.yaml` Blueprint for a free Python web service. It sets `DEMO_MODE=true` and uses `/health` for health checks. To activate Google place search and route calculation, add `GOOGLE_MAPS_API_KEY` in the Render service environment. Without it, the map panel explains the setup needed and the travel planner still works.
+The repository includes a `render.yaml` Blueprint for a free Python web service. It sets `DEMO_MODE=true` and uses `/health` for health checks. To activate Google place search, nearby hotel / railway station / airport discovery, and route calculations, add `GOOGLE_MAPS_API_KEY` in the Render service environment. Without it, the map panel explains the setup needed and the sample itinerary planner still works.
 
 Render's free web services sleep after 15 minutes without inbound traffic and typically take about one minute to start on the next request. Demo review state is held in process memory, so it is temporary and can disappear after a restart or sleep. This deployment is intended for showcasing, not production use.
 
@@ -89,7 +89,9 @@ Google sign-in gives the browser a signed session cookie and does not save the G
 | `SESSION_COOKIE_SECURE` | Mark the session cookie HTTPS-only | Set `true` for deployed HTTPS |
 | `APP_BASE_URL` | Public origin used to construct the OAuth callback URI | Must exactly match the Google Console origin |
 
-For `GOOGLE_MAPS_API_KEY`, create a browser key in Google Cloud, enable Maps JavaScript API, Places API (New), and Routes API, and restrict the key by HTTP referrer to the deployed app (for example, `https://tripmate-ai-demo.onrender.com/*`) and to those APIs. Google Maps Platform requires an API key and billing setup; check current usage and pricing in Google Cloud before enabling it. The key is sent to the browser by design, so referrer and API restrictions are essential. The map reports the route distance and typical duration returned by Google for the selected travel mode; actual travel times can change with traffic and conditions.
+For `GOOGLE_MAPS_API_KEY`, create a browser key in Google Cloud, enable Maps JavaScript API, Places API (New), and Routes API, and restrict the key by HTTP referrer to the deployed app (for example, `https://tripmate-ai-demo.onrender.com/*`) and to those APIs. Add the key in Render at **Environment → Add Environment Variable** with key `GOOGLE_MAPS_API_KEY`, then save and redeploy. Google Maps Platform requires an API key and billing setup; check current usage and pricing in Google Cloud before enabling it. The key is sent to the browser by design, so referrer and API restrictions are essential.
+
+The nearby explorer searches Google Places around the selected destination and shows real place listings, public ratings, available general price-level / price-range data, and map links. A Google price level or range is not a date-specific nightly hotel quote. Google Places does not provide room type, floor, cancellation policy, or current availability; the hotel card links to Google Travel and the property's website so travelers can check those details for their dates. The transit route panel shows a fare only when Google Routes returns a fare for the complete itinerary. Nearby-place distances are straight-line distances; use Google Maps directions for mode-specific road or transit distance and times.
 
 `AVIATIONSTACK_API_KEY` is also accepted as an alias for `AVIATION_STACK_API_KEY`. PostgreSQL connections are configured to require SSL by default unless `sslmode` is already included in `DATABASE_URL`.
 
@@ -124,7 +126,7 @@ The input guardrail and model-generated travel advice are demonstrations, not se
 - `mcp_client.py` — MCP connections and tool helpers
 - `custom_weather_mcp_server.py` — OpenWeather-backed MCP tools
 - `templates/` and `static/` — browser interface
-- `static/map.js` — Google Maps place search, route visualization, and distance explorer
+- `static/map.js` — Google Maps place search, route visualization, transit estimates, and nearby hotel / rail / airport discovery
 - `demo.excalidraw` — workflow diagram
 
 ## License
