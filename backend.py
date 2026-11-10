@@ -15,6 +15,7 @@ import psycopg
 from psycopg.rows import dict_row
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.postgres import PostgresSaver
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.types import Command, interrupt
 from langchain_core.messages import (
     AnyMessage,
@@ -51,15 +52,16 @@ def get_database_url():
 
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b").strip()
 
 if not GROQ_API_KEY:
     raise ValueError("GROQ_API_KEY is missing. Please add it to your .env file.")
 
 # =========================
-# LLM - original model kept
+# LLM
 # =========================
 llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
+    model=GROQ_MODEL,
     api_key=GROQ_API_KEY,
 )
 
@@ -717,16 +719,20 @@ graph.add_edge("final_agent", END)
 graph.add_edge("guardrail_blocked", END)
 
 # =========================
-# PostgreSQL Checkpointer - original persistence kept
+# PostgreSQL persistence when configured; in-memory checkpointing for a
+# small demo deployment that does not have a database.
 # =========================
-DATABASE_URL = get_database_url()
-_conn = psycopg.connect(
-    DATABASE_URL,
-    autocommit=True,
-    row_factory=dict_row,
-)
-checkpointer = PostgresSaver(_conn)
-checkpointer.setup()
+if os.getenv("DATABASE_URL", "").strip():
+    DATABASE_URL = get_database_url()
+    _conn = psycopg.connect(
+        DATABASE_URL,
+        autocommit=True,
+        row_factory=dict_row,
+    )
+    checkpointer = PostgresSaver(_conn)
+    checkpointer.setup()
+else:
+    checkpointer = MemorySaver()
 
 travel_graph = graph.compile(checkpointer=checkpointer)
 

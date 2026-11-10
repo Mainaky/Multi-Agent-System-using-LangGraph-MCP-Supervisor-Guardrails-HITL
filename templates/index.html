@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-  <link rel="stylesheet" href="/static/style.css?v=osm-free-1">
+  <link rel="stylesheet" href="/static/style.css?v=osm-free-2">
 </head>
 <body data-demo-mode="{{ 'true' if demo_mode else 'false' }}">
   <div class="site-shell">
@@ -74,7 +74,7 @@
       </section>
 
       {% if demo_mode %}
-      <div class="demo-notice"><span class="notice-icon">✳</span><span><strong>You’re exploring the interactive demo.</strong> Sample itineraries are generated instantly — no account or API keys needed. Nothing is booked.</span><span class="notice-tag">SAMPLE DATA</span></div>
+      <div class="demo-notice"><span class="notice-icon">✳</span><span><strong>You’re exploring the interactive demo.</strong> The plan uses your cities, trip length, budget, and interests, but it is a structured sample—not an LLM response. To enable live AI, add <code>GROQ_API_KEY</code> in Render and set <code>DEMO_MODE=false</code>. Provider limits or charges may apply.</span><span class="notice-tag">SAMPLE MODE</span></div>
       {% endif %}
 
       <section class="planner-card" aria-labelledby="plannerTitle">
@@ -133,7 +133,7 @@
             </div>
             <section id="nearbyPanel" class="nearby-panel" aria-labelledby="nearbyTitle">
               <div class="nearby-heading"><div><span class="eyebrow"><span class="eyebrow-line"></span> AROUND YOUR DESTINATION</span><h3 id="nearbyTitle">Stay close to the places that matter.</h3><p id="nearbyDescription">Choose a destination to discover nearby hotels, railway stations, and airports.</p></div>
-                <label class="nearby-radius">Search radius<select id="nearbyRadius" aria-label="Nearby search radius"><option value="1500">1.5 km</option><option value="5000" selected>5 km</option><option value="10000">10 km</option><option value="25000">25 km</option></select></label>
+                <label class="nearby-radius">Search radius<select id="nearbyRadius" aria-label="Nearby search radius"><option value="5000">5 km</option><option value="10000" selected>10 km</option><option value="25000">25 km</option><option value="50000">50 km</option><option value="100000">100 km</option></select></label>
               </div>
               <div class="nearby-tabs" role="tablist" aria-label="Nearby places">
                 <button type="button" class="nearby-tab is-active" data-nearby-kind="hotels" role="tab" aria-selected="true">⌂ Hotels</button>
@@ -181,7 +181,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.6/purify.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js" defer></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
-  <script src="/static/script.js" defer></script>
-  <script src="/static/map.js?v=osm-free-2" defer></script>
+  <script src="/static/script.js?v=trip-map-sync-1" defer></script>
+  <script src="/static/map.js?v=osm-free-3" defer></script>
 </body>
 </html>

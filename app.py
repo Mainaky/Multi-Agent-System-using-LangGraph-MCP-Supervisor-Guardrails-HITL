@@ -178,6 +178,14 @@ async def travel_planner(request_data: TravelRequest):
         if DEMO_MODE:
             from demo_mode import run_travel_agent
         else:
+            if not os.getenv("GROQ_API_KEY", "").strip():
+                return JSONResponse(
+                    status_code=503,
+                    content={
+                        "success": False,
+                        "error": "Live AI planning is not configured yet. Add GROQ_API_KEY in Render and set DEMO_MODE=false to enable the model-backed workflow.",
+                    },
+                )
             run_travel_agent, _ = _live_backend()
 
         result = run_travel_agent(

@@ -164,6 +164,10 @@ async function sendMessage() {
     currentThreadId = data.thread_id;
     localStorage.setItem("travel_thread_id", currentThreadId);
 
+    if (typeof window.tripmateSyncMapFromPrompt === "function") {
+      window.tripmateSyncMapFromPrompt(message, data.trip_constraints || {});
+    }
+
     showWorkflow(data);
 
     if (data.requires_approval) {

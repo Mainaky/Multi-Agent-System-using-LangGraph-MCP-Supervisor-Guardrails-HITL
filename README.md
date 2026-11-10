@@ -43,24 +43,26 @@ TripMate is a travel-planning demo built with FastAPI, LangGraph, Groq, and MCP.
 
 6. Open <http://127.0.0.1:8000>.
 
-The PostgreSQL checkpoint tables are created by LangGraph when the backend starts. Live tools require their corresponding API keys; `GROQ_API_KEY` and `DATABASE_URL` are required for the application to start.
+The live workflow requires a Groq API key. PostgreSQL is optional: when `DATABASE_URL` is absent, LangGraph uses in-memory checkpoints, which are lost on a Render restart or sleep. The MCP-backed flight, hotel-search, and weather sections use their respective optional API keys; the planner labels unavailable live data rather than inventing it.
 
 ## Run the interactive demo (no credentials required)
 
-The demo mode uses deterministic sample itineraries to show the full interface and human-review flow without calling an LLM, PostgreSQL, or external MCP services. The interactive map uses public OpenStreetMap-based services and does not require a Google Maps API key; an internet connection is required.
+The demo mode uses a deterministic city- and preference-aware itinerary template to show the full interface and human-review flow without calling an LLM, PostgreSQL, or external MCP services. It is not a live AI response. The interactive map uses public OpenStreetMap-based services and does not require a Google Maps API key; an internet connection is required. When the demo responds to a trip prompt, it also geocodes the destination and, when a city pair is provided, draws the driving route on the map.
 
 1. Install the Python dependencies: `python -m pip install -r requirements.txt`.
 2. Copy `.env.demo.example` to `.env`.
 3. Start the server: `uvicorn app:app --reload --host 127.0.0.1 --port 8000`.
 4. Open <http://127.0.0.1:8000>, choose a sample prompt, generate a draft, and approve it or request a revision.
 
-The interface labels this mode as a demo and identifies the itinerary content as sample data. Set `DEMO_MODE=false` and configure the values in `.env.example` to use the live integrations.
+The interface labels this mode as a demo and identifies the itinerary content as sample data. To use the live model, add a Groq API key, set `DEMO_MODE=false`, and optionally configure `DATABASE_URL` for durable approvals. The app defaults to `openai/gpt-oss-20b`; set `GROQ_MODEL` to another currently supported model if needed. Provider usage limits and charges depend on the account tier and model.
 
 ## Deploy the public demo on Render
 
 The repository includes a `render.yaml` Blueprint for a free Python web service. It sets `DEMO_MODE=true` and uses `/health` for health checks. The map needs no Google Maps key: it uses Leaflet, OpenStreetMap tiles, Photon place lookup, Overpass nearby-place data, and OSRM driving routes. Public Photon, Overpass, and OSRM services are best-effort, may throttle requests, and have no uptime guarantee. Keep demo traffic modest; use a hosted provider or self-hosted services for production.
 
 Render's free web services sleep after 15 minutes without inbound traffic and typically take about one minute to start on the next request. Demo review state is held in process memory, so it is temporary and can disappear after a restart or sleep. This deployment is intended for showcasing, not production use.
+
+To turn on model-generated itineraries on Render, add `GROQ_API_KEY` in the service's **Environment** settings and set `DEMO_MODE` to `false`, then save and redeploy. `GROQ_MODEL` defaults to `openai/gpt-oss-20b`. A PostgreSQL `DATABASE_URL` is optional; without it, draft approval state is held in memory and will be lost when the service restarts. The MCP tools fall back to clearly labeled general guidance when their own keys are absent. Check Groq's current [supported models](https://console.groq.com/docs/models), [model deprecations](https://console.groq.com/docs/deprecations), and account pricing/limits before enabling live calls.
 
 ### Enable Google sign-in
 
@@ -77,10 +79,11 @@ Google sign-in gives the browser a signed session cookie and does not save the G
 
 | Variable | Purpose | Required |
 | --- | --- | --- |
-| `GROQ_API_KEY` | Groq chat model access | Yes |
-| `DATABASE_URL` | PostgreSQL checkpoint storage | Yes |
-| `TAVILY_API_KEY` | Tavily search MCP | For live search |
-| `AVIATION_STACK_API_KEY` | AviationStack MCP | For flight data |
+| `GROQ_API_KEY` | Groq chat model access when `DEMO_MODE=false` | Required for live AI |
+| `GROQ_MODEL` | Groq model ID | Defaults to `openai/gpt-oss-20b` |
+| `DATABASE_URL` | PostgreSQL checkpoint storage | Optional; otherwise approvals are in memory |
+| `TAVILY_API_KEY` | Tavily search MCP | Optional live hotel/web search |
+| `AVIATION_STACK_API_KEY` | AviationStack MCP | Optional flight/airport data |
 | `OPENWEATHER_API_KEY` | Custom weather MCP server | For live weather |
 | `GOOGLE_OAUTH_CLIENT_ID` | Google OAuth web client ID | Optional; required for Google sign-in |
 | `GOOGLE_OAUTH_CLIENT_SECRET` | Google OAuth web client secret | Optional; required for Google sign-in |

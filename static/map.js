@@ -141,6 +141,19 @@
       .join(", ") || "Unnamed place";
   }
 
+  async function geocodeFeatures(query) {
+    const cacheKey = query.trim().toLowerCase();
+    if (geocodeCache.has(cacheKey)) return geocodeCache.get(cacheKey);
+    const url = new URL(endpoints.geocode);
+    url.searchParams.set("q", query);
+    url.searchParams.set("limit", "5");
+    const response = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error("The free place search service is temporarily unavailable.");
+    const features = (await response.json()).features || [];
+    geocodeCache.set(cacheKey, features);
+    return features;
+  }
+
   async function searchLocations(kind, input, list) {
     const query = input.value.trim();
     if (query.length < 2) {
@@ -154,18 +167,7 @@
     list.replaceChildren();
     list.classList.remove("hidden");
     try {
-      const cacheKey = query.toLowerCase();
-      let features = geocodeCache.get(cacheKey);
-      if (!features) {
-        const url = new URL(endpoints.geocode);
-        url.searchParams.set("q", query);
-        url.searchParams.set("limit", "5");
-        const response = await fetch(url, { headers: { Accept: "application/json" } });
-        if (!response.ok) throw new Error("The place search service is temporarily unavailable. Try again shortly.");
-        const data = await response.json();
-        features = data.features || [];
-        geocodeCache.set(cacheKey, features);
-      }
+      const features = await geocodeFeatures(query);
       if (!features.length) {
         const empty = document.createElement("p");
         empty.className = "place-suggestion-empty";
@@ -271,17 +273,23 @@
       if (marker) marker.openPopup();
     });
     actions.appendChild(pin);
+    const routeButton = document.createElement("button");
+    routeButton.type = "button";
+    routeButton.className = "nearby-pin-button";
+    routeButton.textContent = "Route from destination";
+    routeButton.addEventListener("click", () => routeToNearby(place));
+    actions.appendChild(routeButton);
     card.appendChild(actions);
     return card;
   }
 
   function nearbyQuery(kind, radius, lat, lng) {
-    const selector = {
-      hotels: '["tourism"~"^(hotel|hostel|guest_house|motel|apartment)$"]',
-      stations: '["railway"~"^(station|halt)$"]',
-      airports: '["aeroway"~"^(aerodrome|terminal)$"]',
+    const clauses = {
+      hotels: `nwr(around:${radius},${lat},${lng})["tourism"~"^(hotel|hostel|guest_house|motel|apartment)$"];`,
+      stations: `nwr(around:${radius},${lat},${lng})["railway"~"^(station|halt)$"];nwr(around:${radius},${lat},${lng})["public_transport"="station"];`,
+      airports: `nwr(around:${radius},${lat},${lng})["aeroway"~"^(aerodrome|terminal)$"];`,
     }[kind];
-    return `[out:json][timeout:20];(nwr(around:${radius},${lat},${lng})${selector};);out center tags 60;`;
+    return `[out:json][timeout:20];(${clauses});out center tags 100;`;
   }
 
   function placeFromOsm(element) {
@@ -339,8 +347,16 @@
         nearbyEmpty.classList.remove("hidden");
         return;
       }
-      const bounds = L.latLngBounds([[destination.lat, destination.lng]]);
+      const uniquePlaces = new Map();
       places.forEach((place) => {
+        const identity = `${place.name.toLowerCase()}:${place.lat.toFixed(4)}:${place.lng.toFixed(4)}`;
+        if (!uniquePlaces.has(identity)) uniquePlaces.set(identity, place);
+      });
+      const nearestPlaces = Array.from(uniquePlaces.values())
+        .sort((a, b) => metersBetween(destination, a) - metersBetween(destination, b))
+        .slice(0, 12);
+      const bounds = L.latLngBounds([[destination.lat, destination.lng]]);
+      nearestPlaces.forEach((place) => {
         const marker = L.marker([place.lat, place.lng], { icon: makeMarkerIcon(activeNearbyKind), title: place.name })
           .addTo(map).bindPopup(makePopup(place.name));
         marker._tripmatePlace = place;
@@ -403,6 +419,20 @@
     }
   }
 
+  async function routeToNearby(place) {
+    if (!destination) return;
+    const start = { ...destination };
+    const end = { ...place, label: place.name, query: `${place.lat},${place.lng}` };
+    const originalOrigin = origin;
+    const originalDestination = destination;
+    origin = start;
+    destination = end;
+    await showRoute();
+    origin = originalOrigin;
+    destination = originalDestination;
+    updateButtons();
+  }
+
   function useCurrentLocation() {
     clearMapError();
     if (!navigator.geolocation) {
@@ -458,6 +488,58 @@
     setTimeout(() => map.invalidateSize(), 0);
   }
 
+  function routeFromPrompt(message, constraints) {
+    const stop = "(?=\\s+(?:for|over|with|during|leaving|starting|and)\\b|[,;!?]|$)";
+    let match = message.match(new RegExp(`\\bfrom\\s+(.+?)\\s+to\\s+(.+?)${stop}`, "i"));
+    if (!match) {
+      const direct = message.replace(/^\\s*(?:please\\s+)?(?:plan(?:\\s+(?:me\\s+)?(?:a\\s+)?(?:trip\\s+)?)?)/i, "");
+      match = direct.match(new RegExp(`^\\s*(.+?)\\s+to\\s+(.+?)${stop}`, "i"));
+    }
+    const looksMissing = (value) => !value || /^(?:not specified|your selected destination|unknown|n\/a)$/i.test(value.trim());
+    if (match) return { origin: match[1].trim(), destination: match[2].trim() };
+    return {
+      origin: looksMissing(constraints.origin) ? "" : String(constraints.origin).trim(),
+      destination: looksMissing(constraints.destination) ? "" : String(constraints.destination).trim(),
+    };
+  }
+
+  window.tripmateSyncMapFromPrompt = async (message, constraints = {}) => {
+    const cities = routeFromPrompt(message, constraints);
+    if (!cities.destination || !map) return;
+    clearMapError();
+    try {
+      const [originFeatures, destinationFeatures] = await Promise.all([
+        cities.origin ? geocodeFeatures(cities.origin) : Promise.resolve([]),
+        geocodeFeatures(cities.destination),
+      ]);
+      const toPlace = (feature, query) => {
+        const [lng, lat] = feature?.geometry?.coordinates || [];
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+        return { lat, lng, label: labelForFeature(feature), query };
+      };
+      const originPlace = toPlace(originFeatures[0], cities.origin);
+      const destinationPlace = toPlace(destinationFeatures[0], cities.destination);
+      if (!destinationPlace) throw new Error(`Could not locate ${cities.destination}. Search for it in the map panel and choose a result.`);
+      origin = null;
+      originInput.value = cities.origin || "";
+      setPlaceLabel(originSelected, cities.origin ? `Searching for ${cities.origin}` : "Select a starting point");
+      if (originPlace) {
+        originInput.value = originPlace.label;
+        originSuggestions.classList.add("hidden");
+        setSelectedPlace("origin", originPlace);
+      } else if (cities.origin) {
+        setPlaceLabel(originSelected, `Could not locate ${cities.origin}; choose a search result`);
+      }
+      destinationInput.value = destinationPlace.label;
+      destinationSuggestions.classList.add("hidden");
+      setSelectedPlace("destination", destinationPlace);
+      if (originPlace) await showRoute();
+      else map.setView([destinationPlace.lat, destinationPlace.lng], 13);
+    } catch (error) {
+      setMapError(error.message || "Could not transfer this trip to the map. Use the map search boxes instead.");
+    }
+  };
+
   document.querySelectorAll(".place-search-form").forEach((form) => {
     form.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -492,6 +574,7 @@
   document.querySelectorAll("[data-nearby-kind]").forEach((tab) => {
     tab.addEventListener("click", () => {
       activeNearbyKind = tab.dataset.nearbyKind;
+      nearbyRadius.value = activeNearbyKind === "airports" ? "100000" : activeNearbyKind === "stations" ? "25000" : "10000";
       document.querySelectorAll("[data-nearby-kind]").forEach((item) => {
         const active = item === tab;
         item.classList.toggle("is-active", active);
