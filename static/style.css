@@ -923,6 +923,8 @@ body {
 .nearby-search-button { margin-left: auto; padding: 8px 12px; border: 0; border-radius: 999px; background: #28684f; color: #fff; font: 700 .64rem "DM Sans",sans-serif; cursor: pointer; }
 .nearby-search-button:hover:not(:disabled) { background: #1d533d; }
 .nearby-search-button:disabled { opacity: .48; cursor: not-allowed; }
+.nearby-external-link { color: #28684f; font-size: .66rem; font-weight: 700; text-decoration: none; }
+.nearby-external-link:hover { text-decoration: underline; }
 .nearby-content { min-height: 102px; }
 .nearby-empty,.nearby-loading { display: flex; min-height: 102px; flex-direction: column; align-items: center; justify-content: center; gap: 5px; padding: 15px; border: 1px dashed #dfe8df; border-radius: 11px; color: #86938a; text-align: center; }
 .nearby-empty > span:first-child { color: #57916b; font-size: 1.12rem; }

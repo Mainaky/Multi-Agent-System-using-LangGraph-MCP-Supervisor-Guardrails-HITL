@@ -128,11 +128,6 @@ function hideApproval() {
 async function sendMessage() {
   hideError();
 
-  if (waitingForApproval) {
-    showError("Please approve or revise the current draft before starting another plan.");
-    return;
-  }
-
   const input = document.getElementById("userInput");
   const message = input.value.trim();
 
@@ -151,7 +146,8 @@ async function sendMessage() {
       },
       body: JSON.stringify({
         message: message,
-        thread_id: currentThreadId
+        // Each submission starts a fresh trip; retain its ID only for review.
+        thread_id: null
       })
     });
 
@@ -171,6 +167,7 @@ async function sendMessage() {
     showWorkflow(data);
 
     if (data.requires_approval) {
+      hideApproval();
       showResult(data.itinerary || data.answer, data.thread_id, true);
       showApproval(data);
     } else {

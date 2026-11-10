@@ -313,9 +313,9 @@ Generate:
 2. Likely arrival airport
 3. Airlines serving this route
 4. Typical flight duration
-5. Estimated airfare range
-6. Peak season pricing warning
-7. Booking advice
+5. Fare details only when a connected source returned a fare. Otherwise say "No live fare returned" and explain that travel dates, cabin, and baggage affect the price.
+6. A clearly labeled broad AI estimate only when the user supplied route and currency or a defensible currency assumption is stated. Never present an estimate as a live quote.
+7. Peak-season pricing warning and booking advice
 
 Return concise travel guidance.
 """
@@ -473,7 +473,7 @@ Return:
 3. Money-saving suggestions
 4. Overall feasibility
 
-If exact live prices are unavailable, clearly label estimates as approximate.
+If exact live prices are unavailable, provide a useful broad budget range only when currency, trip length, and party assumptions are explicit. Mark it "rough AI planning estimate—not a quote" and give the assumptions. Do not invent a precise fare, hotel nightly rate, or a source. State what dates and traveler details are needed for a real quote.
 """
 
     response = llm.invoke(
@@ -621,6 +621,8 @@ Format the final answer beautifully using these sections:
 Important:
 - Be clear and practical.
 - Mention that live flight APIs may not provide ticket prices when pricing is unavailable.
+- Separate source-verified prices from rough model estimates; state currency, per-person/per-room basis, dates, and source. Do not present unsourced numbers as current fares or hotel prices.
+- If no real price source is available, show "Live fare/rate unavailable" and explain which dates, currency, room count, and traveler count are needed. Include searches for current flight, rail, and hotel prices.
 - Include weather-based travel advice.
 - Keep the response useful for real travel planning.
 - Incorporate the human feedback when revision was requested.

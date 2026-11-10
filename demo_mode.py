@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import uuid
+from urllib.parse import quote
 
 
 _sessions: dict[str, dict[str, str]] = {}
@@ -115,6 +116,22 @@ def _ideas_for(destination: str) -> list[str]:
     ]
 
 
+def _price_search_links(origin: str, destination: str) -> str:
+    """Link to live provider searches instead of fabricating date-sensitive prices."""
+    stays = "https://www.google.com/travel/search?q=" + quote(f"Hotels in {destination}")
+    links = []
+    if origin and origin != "Not specified":
+        route = f"{origin} to {destination}"
+        flights = "https://www.google.com/travel/flights?q=" + quote(f"Flights from {route}")
+        trains = "https://www.google.com/search?q=" + quote(f"train ticket fares {route}")
+        links.extend((
+            f"- **Flights:** [Check current fares]({flights})",
+            f"- **Rail:** [Check train routes and fares]({trains})",
+        ))
+    links.append(f"- **Hotels:** [Compare current room prices]({stays})")
+    return "\n".join(links)
+
+
 def _selected_agents(message: str) -> list[str]:
     lowered = message.casefold()
     selected = []
@@ -158,18 +175,21 @@ def _build_draft(message: str, origin: str, destination: str, days: int, budget:
 **Trip style:** {preference_text}
 
 **Budget target:** {budget}
+
 **Demo note:** This draft uses your cities, duration, budget, and stated interests, but it is generated from a structured demo template—not a live AI model call. Attractions below are planning suggestions; verify current opening hours and access before booking.
 
 {chr(10).join(daily)}
 
 ### Practical recommendations
+- **Fare and stay prices:** No numeric fare was returned by the demo, so it does not invent a quote. Use these live searches after adding your dates, traveler count, and currency:
+{_price_search_links(origin, destination)}
 - **Intercity transport:** Compare rail and air for your dates, baggage, arrival station/airport, and total door-to-door time. The map below draws a driving route only; it does not estimate rail or flight fares.
 - **Stay:** Search around a central transit hub, check recent reviews and cancellation terms, and confirm room type, floor, and nightly rates with the property.
 - **Daily pacing:** {preference_note}
 - **Budget:** Keep separate limits for intercity transport, lodging, meals, local transport, and activities. The amount above is your requested target, not a verified quote.
 - **Before departure:** Check the official weather forecast, entry requirements, attraction opening days, and current transport schedules.
 
-*No booking, live hotel availability, flight/train timetable, or fare quote was retrieved in demo mode.*"""
+*No booking, live hotel availability, flight/train timetable, or fare quote was retrieved in demo mode. Prices in linked searches may vary by dates, currency, baggage, and availability.*"""
 
 
 def run_travel_agent(user_input: str, thread_id: str | None = None) -> dict:

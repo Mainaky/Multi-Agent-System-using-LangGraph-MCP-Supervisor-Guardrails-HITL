@@ -13,6 +13,7 @@
   const mapError = document.getElementById("mapError");
   const routeSummary = document.getElementById("routeSummary");
   const nearbySearchButton = document.getElementById("nearbySearchButton");
+  const nearbyExternalLink = document.getElementById("nearbyExternalLink");
   const nearbyResults = document.getElementById("nearbyResults");
   const nearbyEmpty = document.getElementById("nearbyEmpty");
   const nearbyLoading = document.getElementById("nearbyLoading");
@@ -22,7 +23,10 @@
 
   const endpoints = {
     geocode: "https://photon.komoot.io/api/",
-    overpass: "https://overpass-api.de/api/interpreter",
+    overpass: [
+      "https://overpass-api.de/api/interpreter",
+      "https://overpass.private.coffee/api/interpreter",
+    ],
     route: "https://router.project-osrm.org/route/v1/driving/",
   };
   const geocodeCache = new Map();
@@ -32,6 +36,9 @@
   let destinationMarker = null;
   let routeMarkers = [];
   let nearbyMarkers = [];
+  let nearbyRequestId = 0;
+  let nearbyAbortController = null;
+  let mapSyncId = 0;
   let origin = null;
   let destination = null;
   let activeNearbyKind = "hotels";
@@ -50,6 +57,14 @@
   function updateButtons() {
     routeButton.disabled = !(map && origin && destination);
     nearbySearchButton.disabled = !(map && destination);
+    if (destination) {
+      const label = activeNearbyKind === "hotels" ? "hotels" : activeNearbyKind === "stations" ? "railway stations" : "airports";
+      nearbyExternalLink.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${label} near ${destination.label}`)}`;
+      nearbyExternalLink.textContent = `Open ${label} in Google Maps ↗`;
+      nearbyExternalLink.classList.remove("hidden");
+    } else {
+      nearbyExternalLink.classList.add("hidden");
+    }
   }
 
   function setPlaceLabel(node, label) {
@@ -97,6 +112,11 @@
   }
 
   function clearNearby() {
+    nearbyRequestId += 1;
+    if (nearbyAbortController) nearbyAbortController.abort();
+    nearbyAbortController = null;
+    nearbyLoading.classList.add("hidden");
+    nearbySearchButton.textContent = "Find nearby places";
     nearbyMarkers.forEach((marker) => marker.remove());
     nearbyMarkers = [];
     nearbyResults.replaceChildren();
@@ -289,7 +309,37 @@
       stations: `nwr(around:${radius},${lat},${lng})["railway"~"^(station|halt)$"];nwr(around:${radius},${lat},${lng})["public_transport"="station"];`,
       airports: `nwr(around:${radius},${lat},${lng})["aeroway"~"^(aerodrome|terminal)$"];`,
     }[kind];
-    return `[out:json][timeout:20];(${clauses});out center tags 100;`;
+    return `[out:json][timeout:12];(${clauses});out center tags 100;`;
+  }
+
+  async function fetchNearbyFromCommunity(query, signal) {
+    let lastError = null;
+    for (const endpoint of endpoints.overpass) {
+      if (signal.aborted) throw new DOMException("Search cancelled", "AbortError");
+      const attempt = new AbortController();
+      const relayAbort = () => attempt.abort();
+      signal.addEventListener("abort", relayAbort, { once: true });
+      const timeout = window.setTimeout(() => attempt.abort(), 9_000);
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8", Accept: "application/json" },
+          body: new URLSearchParams({ data: query }),
+          signal: attempt.signal,
+        });
+        if (!response.ok) throw new Error(`Places endpoint returned ${response.status}.`);
+        const data = await response.json();
+        if (data.remark) throw new Error("Places endpoint could not complete the search.");
+        return data;
+      } catch (error) {
+        if (signal.aborted) throw new DOMException("Search cancelled", "AbortError");
+        lastError = error;
+      } finally {
+        window.clearTimeout(timeout);
+        signal.removeEventListener("abort", relayAbort);
+      }
+    }
+    throw lastError || new Error("Community place search is temporarily unavailable.");
   }
 
   function placeFromOsm(element) {
@@ -314,6 +364,10 @@
 
   async function searchNearbyPlaces() {
     if (!destination || !map) return;
+    if (nearbyAbortController) nearbyAbortController.abort();
+    nearbyAbortController = new AbortController();
+    const requestId = ++nearbyRequestId;
+    const requestSignal = nearbyAbortController.signal;
     clearMapError();
     nearbySearchButton.disabled = true;
     nearbySearchButton.textContent = "Searching…";
@@ -330,17 +384,12 @@
         const waitForRateLimit = Math.max(0, 1_100 - (Date.now() - lastOverpassRequest));
         if (waitForRateLimit) await new Promise((resolve) => window.setTimeout(resolve, waitForRateLimit));
         const query = nearbyQuery(activeNearbyKind, radius, destination.lat, destination.lng);
-        const response = await fetch(endpoints.overpass, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8", Accept: "application/json" },
-          body: new URLSearchParams({ data: query }),
-        });
         lastOverpassRequest = Date.now();
-        if (!response.ok) throw new Error("The community places service is busy. Please wait a little and try again.");
-        const data = await response.json();
+        const data = await fetchNearbyFromCommunity(query, requestSignal);
         places = (data.elements || []).map(placeFromOsm).filter(Boolean);
         nearbyCache.set(key, places);
       }
+      if (requestId !== nearbyRequestId) return;
       if (!places.length) {
         nearbyEmpty.querySelector("strong").textContent = "No mapped places found in this radius";
         nearbyEmpty.querySelector("span:last-child").textContent = "Try a wider radius or another destination. OpenStreetMap coverage varies by area.";
@@ -366,14 +415,18 @@
       });
       map.fitBounds(bounds, { padding: [36, 36], maxZoom: 14 });
     } catch (error) {
-      setMapError(error.message || "Nearby search failed. The free community service may be busy; try again later.");
+      if (requestId !== nearbyRequestId || error.name === "AbortError") return;
+      setMapError("Nearby listings are busy right now. We tried two community map servers; wait a moment and retry, or open a live hotel search below.");
       nearbyEmpty.querySelector("strong").textContent = "Nearby search is temporarily unavailable";
-      nearbyEmpty.querySelector("span:last-child").textContent = "Try again in a moment. These community endpoints have no uptime guarantee.";
+      nearbyEmpty.querySelector("span:last-child").textContent = "Try again in a moment, or use the live map search link above. Community place servers can be busy.";
       nearbyEmpty.classList.remove("hidden");
     } finally {
-      nearbyLoading.classList.add("hidden");
-      nearbySearchButton.textContent = "Find nearby places";
-      updateButtons();
+      if (requestId === nearbyRequestId) {
+        nearbyAbortController = null;
+        nearbyLoading.classList.add("hidden");
+        nearbySearchButton.textContent = "Find nearby places";
+        updateButtons();
+      }
     }
   }
 
@@ -506,7 +559,23 @@
   window.tripmateSyncMapFromPrompt = async (message, constraints = {}) => {
     const cities = routeFromPrompt(message, constraints);
     if (!cities.destination || !map) return;
+    const syncId = ++mapSyncId;
     clearMapError();
+    origin = null;
+    destination = null;
+    originInput.value = cities.origin || "";
+    destinationInput.value = cities.destination;
+    setPlaceLabel(originSelected, cities.origin ? `Locating ${cities.origin}…` : "Select a starting point");
+    setPlaceLabel(destinationSelected, `Locating ${cities.destination}…`);
+    clearRoute();
+    if (destinationMarker) destinationMarker.remove();
+    destinationMarker = null;
+    routeSummary.classList.add("hidden");
+    clearNearby();
+    nearbyDescription.textContent = `Searching for mapped places near ${cities.destination}.`;
+    nearbyEmpty.querySelector("strong").textContent = "Finding your destination";
+    nearbyEmpty.querySelector("span:last-child").textContent = "Choose Hotels, Railway stations, or Airports to search this area.";
+    updateButtons();
     try {
       const [originFeatures, destinationFeatures] = await Promise.all([
         cities.origin ? geocodeFeatures(cities.origin) : Promise.resolve([]),
@@ -519,6 +588,7 @@
       };
       const originPlace = toPlace(originFeatures[0], cities.origin);
       const destinationPlace = toPlace(destinationFeatures[0], cities.destination);
+      if (syncId !== mapSyncId) return;
       if (!destinationPlace) throw new Error(`Could not locate ${cities.destination}. Search for it in the map panel and choose a result.`);
       origin = null;
       originInput.value = cities.origin || "";
@@ -536,6 +606,7 @@
       if (originPlace) await showRoute();
       else map.setView([destinationPlace.lat, destinationPlace.lng], 13);
     } catch (error) {
+      if (syncId !== mapSyncId) return;
       setMapError(error.message || "Could not transfer this trip to the map. Use the map search boxes instead.");
     }
   };

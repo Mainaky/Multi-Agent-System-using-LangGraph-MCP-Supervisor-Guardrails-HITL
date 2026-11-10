@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-  <link rel="stylesheet" href="/static/style.css?v=osm-free-2">
+  <link rel="stylesheet" href="/static/style.css?v=osm-free-3">
 </head>
 <body data-demo-mode="{{ 'true' if demo_mode else 'false' }}">
   <div class="site-shell">
@@ -140,6 +140,7 @@
                 <button type="button" class="nearby-tab" data-nearby-kind="stations" role="tab" aria-selected="false">🚆 Railway stations</button>
                 <button type="button" class="nearby-tab" data-nearby-kind="airports" role="tab" aria-selected="false">✈ Airports</button>
                 <button id="nearbySearchButton" type="button" class="nearby-search-button" disabled>Find nearby places</button>
+                <a id="nearbyExternalLink" class="nearby-external-link hidden" href="#" target="_blank" rel="noopener noreferrer">Open nearby search ↗</a>
               </div>
               <div class="nearby-content">
                 <div id="nearbyEmpty" class="nearby-empty"><span aria-hidden="true">⌖</span><strong>Explore what’s nearby</strong><span>Pick a destination above, then search for hotels or transport links around it.</span></div>
@@ -181,7 +182,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.6/purify.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js" defer></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
-  <script src="/static/script.js?v=trip-map-sync-1" defer></script>
-  <script src="/static/map.js?v=osm-free-3" defer></script>
+  <script src="/static/script.js?v=trip-refresh-fares-2" defer></script>
+  <script src="/static/map.js?v=nearby-fallback-4" defer></script>
 </body>
 </html>
