@@ -74,7 +74,6 @@ if GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET:
 def page_context(request: Request) -> dict:
     return {
         "demo_mode": DEMO_MODE,
-        "google_maps_api_key": os.getenv("GOOGLE_MAPS_API_KEY", "").strip(),
         "user": request.session.get("user"),
         "auth_configured": AUTH_CONFIGURED,
     }

@@ -9,9 +9,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css?v=maps-nearby-1">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="/static/style.css?v=osm-free-1">
 </head>
-<body data-demo-mode="{{ 'true' if demo_mode else 'false' }}" data-google-maps-key="{{ google_maps_api_key }}">
+<body data-demo-mode="{{ 'true' if demo_mode else 'false' }}">
   <div class="site-shell">
     <header class="topbar">
       <a class="brand" href="/" aria-label="TripMate home">
@@ -95,45 +96,39 @@
         </div>
       </section>
 
-      <section id="mapPlanner" class="map-planner-card" aria-labelledby="mapTitle" data-maps-enabled="{{ 'true' if google_maps_api_key else 'false' }}">
+      <section id="mapPlanner" class="map-planner-card" aria-labelledby="mapTitle">
         <div class="map-heading">
           <div><span class="eyebrow"><span class="eyebrow-line"></span> YOUR ROUTE, ON THE MAP</span><h2 id="mapTitle">See how far your next stop really is.</h2><p>Choose a starting point and a destination to map the route, distance, and typical travel time.</p></div>
-          <span class="map-provider-pill"><span class="map-provider-dot"></span> Google Maps</span>
+          <span class="map-provider-pill"><span class="map-provider-dot"></span> OpenStreetMap</span>
         </div>
         <div class="map-explorer">
           <div class="map-controls">
             <div class="place-field">
-              <label for="originAutocomplete">STARTING POINT</label>
-              <div id="originAutocomplete" class="autocomplete-slot"><span class="field-placeholder">Search for a city, address, or landmark</span></div>
+              <label for="originQuery">STARTING POINT</label>
+              <div id="originAutocomplete" class="autocomplete-slot"><form class="place-search-form" data-search-kind="origin"><input id="originQuery" class="place-search-input" type="search" placeholder="Search city, address, or landmark" autocomplete="off" required><button class="place-search-button" type="submit" aria-label="Search starting point">⌕</button></form><div id="originSuggestions" class="place-suggestions hidden"></div></div>
               <p id="originSelected" class="selected-place">Select a starting point</p>
               <button id="useLocationBtn" class="location-button" type="button" disabled><span aria-hidden="true">◎</span> Use my current location</button>
             </div>
             <div class="route-connector" aria-hidden="true"><span></span></div>
             <div class="place-field destination-field">
-              <label for="destinationAutocomplete">DESTINATION</label>
-              <div id="destinationAutocomplete" class="autocomplete-slot"><span class="field-placeholder">Where would you like to go?</span></div>
+              <label for="destinationQuery">DESTINATION</label>
+              <div id="destinationAutocomplete" class="autocomplete-slot"><form class="place-search-form" data-search-kind="destination"><input id="destinationQuery" class="place-search-input" type="search" placeholder="Where would you like to go?" autocomplete="off" required><button class="place-search-button" type="submit" aria-label="Search destination">⌕</button></form><div id="destinationSuggestions" class="place-suggestions hidden"></div></div>
               <p id="destinationSelected" class="selected-place">Select a destination</p>
             </div>
             <div class="travel-mode-row">
               <label for="travelMode">TRAVEL MODE</label>
-              <select id="travelMode" aria-label="Choose travel mode">
-                <option value="DRIVING">🚗 Driving</option>
-                <option value="WALKING">🚶 Walking</option>
-                <option value="BICYCLING">🚲 Cycling</option>
-                <option value="TRANSIT">🚆 Transit</option>
-              </select>
+              <select id="travelMode" aria-label="Choose travel mode"><option value="DRIVING">🚗 Driving</option></select>
             </div>
             <button id="routeBtn" class="route-button" type="button" disabled>Show my route <span aria-hidden="true">↗</span></button>
-            <p class="map-privacy-note">TripMate doesn’t save your location. Google Maps uses it to calculate your route.</p>
+            <p class="map-privacy-note">TripMate doesn’t save your location. Search and route requests go to the OpenStreetMap-based public services.</p>
           </div>
           <div class="map-visual-column">
-            <div id="googleMap" class="google-map" aria-label="Interactive Google map showing your route">
+            <div id="mapCanvas" class="trip-map" aria-label="Interactive OpenStreetMap showing your route">
               <div id="mapState" class="map-state"><span class="map-state-icon">⌖</span><strong>Make this journey yours</strong><span>Choose two places to see your route appear here.</span></div>
             </div>
             <div id="routeSummary" class="route-summary hidden" aria-live="polite">
-              <div class="route-metric"><span class="metric-icon">↔</span><div><small>ROUTE DISTANCE</small><strong id="routeDistance">—</strong></div></div>
-              <div class="route-metric"><span class="metric-icon">◷</span><div><small>ESTIMATED TIME</small><strong id="routeDuration">—</strong></div></div>
-              <div id="routeFareMetric" class="route-metric route-fare hidden"><span class="metric-icon">₹</span><div><small>TRANSIT FARE</small><strong id="routeFare">—</strong></div></div>
+              <div class="route-metric"><span class="metric-icon">↔</span><div><small>DRIVING DISTANCE</small><strong id="routeDistance">—</strong></div></div>
+              <div class="route-metric"><span class="metric-icon">◷</span><div><small>ESTIMATED DRIVE</small><strong id="routeDuration">—</strong></div></div>
               <a id="openDirections" class="open-directions" href="#" target="_blank" rel="noopener noreferrer">Open turn-by-turn directions <span aria-hidden="true">↗</span></a>
             </div>
             <section id="nearbyPanel" class="nearby-panel" aria-labelledby="nearbyTitle">
@@ -148,15 +143,15 @@
               </div>
               <div class="nearby-content">
                 <div id="nearbyEmpty" class="nearby-empty"><span aria-hidden="true">⌖</span><strong>Explore what’s nearby</strong><span>Pick a destination above, then search for hotels or transport links around it.</span></div>
-                <div id="nearbyLoading" class="nearby-loading hidden" role="status">Searching Google Maps around your destination…</div>
+                <div id="nearbyLoading" class="nearby-loading hidden" role="status">Searching OpenStreetMap places around your destination…</div>
                 <div id="nearbyResults" class="nearby-results" aria-live="polite"></div>
               </div>
-              <p class="nearby-disclosure">Google place data can include ratings and a broad price level or range. It is not a dated room quote. Room type, floor, cancellation rules, and booking prices must be confirmed with the property or booking provider. Transit fares appear only when Google has fare data for the whole route.</p>
+              <p class="nearby-disclosure">OpenStreetMap community data may be incomplete and does not provide live hotel rates, room availability, floor details, or ticket fares. Confirm prices and booking details directly with the property or transport provider. Nearby distance is straight-line; driving route distance is calculated separately.</p>
             </section>
-            <p class="map-attribution-note">Route distance and time are estimates from Google Maps and may change with traffic or conditions.</p>
+            <p class="map-attribution-note">Map © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>. Public geocoding, places, and routing services are best-effort and may be rate-limited.</p>
           </div>
         </div>
-        <div id="mapSetupNotice" class="map-setup-notice hidden" role="status"></div>
+        <div id="mapSetupNotice" class="map-setup-notice" role="status"><strong>No Google Maps key needed.</strong> This demo uses Leaflet with OpenStreetMap data and public Photon, Overpass, and OSRM services. These community endpoints are intended for modest demo traffic and do not guarantee availability.</div>
         <div id="mapError" class="map-error hidden" role="alert"></div>
       </section>
 
@@ -185,7 +180,8 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.6/purify.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js" defer></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
   <script src="/static/script.js" defer></script>
-  <script src="/static/map.js?v=maps-nearby-1" defer></script>
+  <script src="/static/map.js?v=osm-free-2" defer></script>
 </body>
 </html>
